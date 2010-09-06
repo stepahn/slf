@@ -1,0 +1,175 @@
+from objmodel import W_Integer, W_NormalObject, W_Method
+import compile
+import primitives
+import struct
+
+class BytecodeInterpreter(object):
+    def __init__(self, code, context, interpreter):
+        self.code = code
+        self.context = context
+        self.interpreter = interpreter
+        self.pc = 0
+        self.stack = []
+
+    def run(self):
+        while self.pc < len(self.code.code):
+            op = self.next_instruction()
+            if compile.isjump(op):
+                arg = self.read_arg4()
+            elif compile.hasarg(op):
+                arg = self.read_smallarg()
+
+            if op == compile.INT_LITERAL:
+                self.op_int_literal(arg)
+            elif op == compile.SET_LOCAL:
+                # TODO something is strange
+                t = self.stack.pop()
+                self.op_implicit_self()
+                self.stack.append(t)
+                self.op_assignment(arg)
+            elif op == compile.PRIMITIVE_METHOD_CALL:
+                self.op_primitive_method_call(arg)
+            elif op == compile.POP:
+                self.stack.pop()
+            elif op == compile.GET_LOCAL:
+                self.op_implicit_self()
+                self.op_method_lookup(arg)
+                self.op_method_call(0)
+            elif op == compile.JUMP_IF_FALSE:
+                self.op_jump_if_false(arg)
+            elif op == compile.JUMP:
+                self.op_jump(arg)
+            elif op == compile.MAKE_OBJECT:
+                self.op_make_object(arg)
+            elif op == compile.MAKE_OBJECT_CALL:
+                self.op_make_object_call(arg)
+            elif op == compile.ASSIGNMENT_APPEND_PARENT:
+                self.op_assignment_append_parrent(arg)
+            elif op == compile.METHOD_LOOKUP:
+                self.op_method_lookup(arg)
+            elif op == compile.METHOD_CALL:
+                self.op_method_call(arg)
+            elif op == compile.DUP:
+                self.op_dup()
+            elif op == compile.ASSIGNMENT:
+                self.op_assignment(arg)
+            elif op == compile.MAKE_FUNCTION:
+                self.op_make_function(arg)
+            elif op == compile.IMPLICIT_SELF:
+                self.op_implicit_self()
+            else:
+                raise NotImplementedError(compile.opcode_names[op])
+        return self.context
+
+    def op_assignment(self, arg):
+        name = self.lookup_symbol(arg)
+        value = self.stack.pop()
+        target = self.stack.pop()
+        target.setvalue(name, value)
+        self.stack.append(value)
+
+    def op_assignment_append_parrent(self, arg):
+        name = self.lookup_symbol(arg)
+        parent = self.stack.pop()
+        target = self.stack.pop()
+        target.setvalue(name, parent)
+        target.parents.append(name)
+        self.stack.append(target)
+
+    def op_dup(self):
+        self.stack.append(self.stack[-1])
+
+    def op_implicit_self(self):
+        self.stack.append(self.context)
+
+    def op_int_literal(self, arg):
+        i = W_Integer(arg)
+        i.builtins = self.interpreter.builtins
+        self.stack.append(i)
+
+    def op_jump(self, arg):
+        self.pc += arg
+
+    def op_jump_if_false(self, arg):
+        acc = self.stack.pop()
+        if acc.istrue() is not True:
+            self.op_jump(arg)
+
+    def op_make_function(self, arg):
+        self.stack.append(W_Method({'block':self.lookup_subcode(arg), '__parent__':self.context}))
+
+    def op_make_object(self, arg):
+        name = self.lookup_symbol(arg)
+        obj = W_NormalObject({'__parent__':self.context})
+        self.stack.append(obj)
+
+    def op_make_object_call(self, arg):
+        code = self.lookup_subcode(arg)
+        context = self.stack[-1]
+        self.eval(code, context, self.interpreter)
+
+    def op_method_call(self, arg):
+        args = []
+        for i in xrange(arg):
+            args.insert(0,self.stack.pop())
+        method = self.stack.pop()
+        receiver = self.stack.pop()
+        if method.callable():
+            code = method.getvalue('block')
+            context = W_NormalObject()
+            for i, a in enumerate(args):
+                context.setvalue(code.symbols[i], a)
+            context.setvalue('self', receiver)
+            context.setvalue('__parent__', receiver)
+            res = self.eval(code, context, self.interpreter)
+        else:
+            res = method
+        self.stack.append(res)
+
+    def op_method_lookup(self, arg):
+        name = self.lookup_symbol(arg)
+        self.stack.append(self.stack[-1].getvalue(name))
+
+    def op_primitive_method_call(self, arg):
+        primitive = primitives.primitives_by_name[arg]
+        arity = primitives.all_primitives_arg_count[arg]
+        arguments = []
+        for i in xrange(arity):
+            arguments.append(self.stack.pop())
+        receiver = self.stack.pop()
+        res = primitives.call(primitive, receiver, arguments, self.interpreter.builtins)
+        self.stack.append(res)
+
+    def eval(self, code, context, interpreter):
+        b = BytecodeInterpreter(code, context, interpreter)
+        b.run()
+        return b.stack[0]
+
+    def read(self, next=1):
+        c = self.code.code[self.pc:self.pc+next]
+        self.pc += next
+        return c
+
+    def lookup_subcode(self, index):
+        return self.code.subbytecodes[index]
+
+    def lookup_symbol(self, index):
+        return self.code.symbols[index]
+
+    def next_instruction(self):
+        return self.read_arg()
+
+    def read_arg(self):
+        c = self.read()
+        return struct.unpack('<b',c)[0]
+
+    def read_arg4(self):
+        c = self.read(4)
+        return struct.unpack('<i', c)[0]
+
+    def read_smallarg(self):
+        i = self.read_arg()
+        if i == -128:
+            return self.read_arg4()
+        else:
+            return i
