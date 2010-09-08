@@ -4,9 +4,9 @@ class MetaNode(type):
     def __init__(cls, name, bases, dict):
         compile_name = "compile_" + name
         abstract = not hasattr(cls, "attrs")
-        def dispatch(self, compiler):
+        def dispatch(self, compiler, needsresult):
             if not abstract:
-                getattr(compiler, compile_name)(self)
+                getattr(compiler, compile_name)(self, needsresult)
         cls.dispatch = dispatch
 
 class AstNode(object):

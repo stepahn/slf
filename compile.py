@@ -229,7 +229,7 @@ class Compiler(object):
         self.stackdepth += num
         self.max_stackdepth = max(self.stackdepth, self.max_stackdepth)
 
-    specialize.argtype(2)
+    @specialize.argtype(2)
     def emit(self, opcode, arg=None, stackeffect=sys.maxint):
         self.code.append(chr(opcode))
         if isjump(opcode):
@@ -276,7 +276,7 @@ class Compiler(object):
 
 
     def compile(self, ast, needsresult=True):
-        return getattr(self, "compile_" + ast.__class__.__name__)(ast, needsresult)
+        return ast.dispatch(self, needsresult)
 
     def compile_IntLiteral(self, astnode, needsresult):
         self.emit(INT_LITERAL, astnode.value)
