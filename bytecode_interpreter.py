@@ -162,12 +162,17 @@ class BytecodeInterpreter(object):
         return self.read_arg()
 
     def read_arg(self):
-        c = self.read()
-        return struct.unpack('<b',c)[0]
+        v = ord(self.read())
+        if v >= 128:
+            v -= 256
+        return v
 
     def read_arg4(self):
         c = self.read(4)
-        return struct.unpack('<i', c)[0]
+        highval = ord(c[3])
+        if highval >= 128:
+            highval -= 256
+        return (ord(c[0]) | (ord(c[1]) << 8) | (ord(c[2]) << 16) | (highval << 24))
 
     def read_smallarg(self):
         i = self.read_arg()
