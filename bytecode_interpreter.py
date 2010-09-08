@@ -14,6 +14,8 @@ class BytecodeInterpreter(object):
     def run(self):
         while self.pc < len(self.code.code):
             op = self.next_instruction()
+
+            arg = 0
             if compile.isjump(op):
                 arg = self.read_arg4()
             elif compile.hasarg(op):
