@@ -148,9 +148,16 @@ class BytecodeInterpreter(object):
         return b.stack[0]
 
     def read(self, next=1):
-        c = self.code.code[self.pc:self.pc+next]
-        self.pc += next
-        return c
+        if next == 1:
+            c = self.code.code[self.pc]
+            self.pc += 1
+            return c
+        else:
+            c = []
+            for i in xrange(next):
+                c.append(self.code.code[self.pc])
+                self.pc += 1
+            return ''.join(c)
 
     def lookup_subcode(self, index):
         return self.code.subbytecodes[index]
