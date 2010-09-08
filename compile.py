@@ -102,6 +102,7 @@ reached, the top of the stack is returned (and the stack should have only one
 element on it).
 """
 import sys
+from pypy.rlib.objectmodel import specialize
 
 import simpleast
 
@@ -228,6 +229,7 @@ class Compiler(object):
         self.stackdepth += num
         self.max_stackdepth = max(self.stackdepth, self.max_stackdepth)
 
+    specialize.argtype(2)
     def emit(self, opcode, arg=None, stackeffect=sys.maxint):
         self.code.append(chr(opcode))
         if isjump(opcode):

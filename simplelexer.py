@@ -1,41 +1,5 @@
+from pypy.rlib.parsing.lexer import Lexer, Token, SourcePos
 import re
-
-class Token(object):
-    def __init__(self, name, source, source_pos):
-        self.name = name
-        self.source = source
-        self.source_pos = source_pos
-
-    def copy(self):
-        return Token(self.name, self.source, self.source_pos)
-
-    def __eq__(self, other):
-        return self.__dict__ == other.__dict__
-
-    def __ne__(self, other):
-        return not self == other
-
-    def __repr__(self):
-        return "Token(%r, %r, %r)" % (self.name, self.source, self.source_pos)
-
-class SourcePos(object):
-    """An object to record position in source code."""
-    def __init__(self, i, lineno, columnno):
-        self.i = i                  # index in source string
-        self.lineno = lineno        # line number in source
-        self.columnno = columnno    # column in line
-
-    def copy(self):
-        return SourcePos(self.i, self.lineno, self.columnno)
-
-    def __eq__(self, other):
-        return self.__dict__ == other.__dict__
-
-    def __ne__(self, other):
-        return not self == other
-
-    def __repr__(self):
-        return "SourcePos(%r, %r, %r)" % (self.i, self.lineno, self.columnno)
 
 class LexerError(Exception):
     def __init__(self, input, source_pos, msg=""):
@@ -54,47 +18,6 @@ class LexerError(Exception):
     def __str__(self):
         return self.nice_error_message()
 
-class Tokenizer(object):
-    def __init__(self, string):
-        self.string = string
-        self.i = 0
-        self.lineno = 0
-        self.columnno = 0
-
-    def adjust_position(self, token):
-        """Update the line# and col# as a result of this token."""
-        newlines = token.count("\n")
-        self.lineno += newlines
-        if newlines==0:
-            self.columnno += len(token)
-        else:
-            self.columnno = token.rfind("\n")
-        self.i += len(token)
-
-    def source_pos(self):
-        return SourcePos(self.i, self.lineno, self.columnno)
-
-    def next(self):
-        if self.i >= len(self.string):
-            raise StopIteration
-        m = re.match(regex, self.string[self.i:])
-        if m is None:
-            raise LexerError(self.string, self.source_pos())
-        d = m.groupdict()
-        matches = [(key, value) for (key, value) in d.iteritems() if value is not None]
-        if len(matches) != 1:
-            raise LexerError(self.string, self.source_pos(), "ambiguous match")
-        match, = matches
-
-        result = Token(match[0], match[1], self.source_pos())
-        self.adjust_position(match[1])
-        return result
-
-    def __iter__(self):
-        return self
-
-
-
 # attempts at writing a simple Python-like lexer
 
 def group(*choices, **namegroup):
@@ -105,7 +28,6 @@ def group(*choices, **namegroup):
     return '(' + '|'.join(choices) + ')'
 def any(*choices):
     result = group(*choices) + '*'
-    re.compile(result)
     return result
 def maybe(*choices):
     return group(*choices) + '?'
@@ -116,9 +38,9 @@ Number = r'(([+-])?[1-9][0-9]*)|0'
 def make_single_string(delim):
     normal_chars = r"[^\n\%s]*" % (delim, )
     return "".join([delim, normal_chars,
-                    any(r"\\." + normal_chars), delim])
+                    any(r"\\" + delim + normal_chars), delim])
 
-SingleString = group(make_single_string(r"\'"),
+String = group(make_single_string(r"\'"),
                      make_single_string(r'\"'))
 
 
@@ -142,16 +64,25 @@ Special = r'[\:\=\,]'
 OpenBracket = r'[\[\(\{]'
 CloseBracket = r'[\]\)\}]'
 
-regex = group(Number=Number, String=SingleString, Name=Name, Ignore=Ignore,
-              Indent=Indent, OpenBracket=OpenBracket, CloseBracket=CloseBracket,
-              Special=Special, PrimitiveName=PrimitiveName)
+tokens = ["Number", "String", "Name", "Ignore", "Indent", 
+          "OpenBracket", "CloseBracket", "Special", "PrimitiveName"]
+
+def make_lexer():
+    from pypy.rlib.parsing.regexparse import parse_regex
+    return Lexer([parse_regex(globals()[r]) for r in tokens], tokens[:])
+    
+simplelexer = make_lexer()
+
+tabsize = 4
 
 def postprocess(tokens, source):
     parenthesis_level = 0
     indentation_levels = [0]
     output_tokens = []
     tokens = [token for token in tokens if token.name != "Ignore"]
-    for i, token in enumerate(tokens):
+    token = None
+    for i in range(len(tokens)):
+        token = tokens[i]
         if token.name == "OpenBracket":
             parenthesis_level += 1
             output_tokens.append(token)
@@ -213,10 +144,11 @@ def postprocess(tokens, source):
                 pass # implicit line-continuations within parenthesis
         else:
             output_tokens.append(token)
-    output_tokens.append(Token("EOF", "", token.source_pos))
+    if token is not None:
+        output_tokens.append(Token("EOF", "", token.source_pos))
     return output_tokens
 
 def lex(s):
     if not s.endswith('\n'):
         s += '\n'
-    return postprocess(Tokenizer(s), s)
+    return postprocess(simplelexer.tokenize(s), s)

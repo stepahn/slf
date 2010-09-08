@@ -5,6 +5,7 @@ import py
 import simpleast
 from simplelexer import lex
 
+from pypy.rlib.objectmodel import specialize
 
 def parse(s):
     result = Parser(s).program()
@@ -87,10 +88,12 @@ def make_arglist(methodname):
     return arglist
 
 def make_choice(*methodnames):
+    from pypy.rlib.unroll import unrolling_iterable
+    unrolling_methodnames = unrolling_iterable(methodnames)
     def choice(self):
         c = self.i, self.last_i
         last = None
-        for func in methodnames:
+        for func in unrolling_methodnames:
             try:
                 return getattr(self, func)()
             except ParseError, e:
@@ -119,6 +122,7 @@ class Parser(object):
                          ErrorInformation(result.source_pos.i, [value or name]),
                          self.source)
 
+    @specialize.arg(1)
     def call(self, c, *call):
         call = (c, ) + call
         result = None
@@ -126,6 +130,7 @@ class Parser(object):
             result = subcall()
         return result
 
+    @specialize.arg(1, 2)
     def repeat(self, c1, c2=None):
         if c2 is None:
             c2 = c1
@@ -142,6 +147,7 @@ class Parser(object):
                 self.i, self.last_i = c
                 return result
 
+    @specialize.arg(1)
     def maybe(self, callable):
         c = self.i, self.last_i
         try:
@@ -217,6 +223,7 @@ class Parser(object):
         self.match("EOF")
         return result
 
+    @specialize.arg(2)
     def block(self, header, beforeblock=None):
         self.match("Name", header)
         if beforeblock:
