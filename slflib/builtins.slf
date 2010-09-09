@@ -60,3 +60,4 @@ object math:
 
 def puts(i):
     i $puts
+

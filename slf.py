@@ -1,7 +1,7 @@
 #/usr/bin/env python
 
-from simpleparser import parse
-from interpreter import Interpreter
+from slflib.simpleparser import parse
+from slflib.interpreter import Interpreter
 
 from pypy.rlib.streamio import open_file_as_stream
 
