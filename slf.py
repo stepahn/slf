@@ -15,15 +15,7 @@ def main(args):
     interpreter = Interpreter()
     w_module = interpreter.make_module()
 
-    s = open_file_as_stream(fname, 'r', 1024)
-
-    code =''
-    while True:
-        next_line = s.readline()
-        if not next_line:
-            break
-        code += next_line
-
+    code = open_file_as_stream(fname, 'r', 1024).readall()
     ast = parse(code)
     interpreter.eval(ast, w_module)
 

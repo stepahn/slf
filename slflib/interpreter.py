@@ -14,20 +14,11 @@ class Interpreter(object):
 
     def read_builtins(self, fname):
         from pypy.rlib.streamio import open_file_as_stream
-        s = open_file_as_stream(fname, 'r', 1024)
-
-        code =''
-        while True:
-            next_line = s.readline()
-            if not next_line:
-                break
-            code += next_line
-
-        return code
+        return open_file_as_stream(fname, 'r', 1024).readall()
 
     def eval(self, ast, w_context):
         if self.use_bytecode:
-            return BytecodeInterpreter(compile.compile(ast), w_context, self).run()
+            return BytecodeInterpreter(compile.compile(ast), w_context, self, True).run()
         else:
             method = getattr(self, "eval_" + ast.__class__.__name__)
             return method(ast, w_context)
