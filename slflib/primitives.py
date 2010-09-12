@@ -19,7 +19,9 @@ def call(methodname, receiver, arguments, builtins):
     method = primitives[methodname]
     args = []
 
-    for a in [receiver.getvalue()] + arguments:
+    args.append(receiver.getvalue('').intvalue())
+
+    for a in arguments:
         if a:
             args.append(a.intvalue())
         else:
