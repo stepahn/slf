@@ -2,14 +2,19 @@ from objmodel import W_Integer, W_NormalObject, W_Method
 import compile
 import primitives
 import struct
+import disass
 
 class BytecodeInterpreter(object):
-    def __init__(self, code, context, interpreter):
+    def __init__(self, code, context, interpreter, debug_level=1):
         self.code = code
         self.context = context
         self.interpreter = interpreter
         self.pc = 0
         self.stack = []
+        self.debug = interpreter.debug
+        self.debug_level = debug_level
+        if self.debug:
+            print '(%d) dbg: >>>>>>>>>>>>>>>>>>>>>>>>>>>>' % self.debug_level
 
     def run(self):
         while self.pc < len(self.code.code):
@@ -20,6 +25,10 @@ class BytecodeInterpreter(object):
                 arg = self.read_arg4()
             elif compile.hasarg(op):
                 arg = self.read_smallarg()
+
+            if self.debug:
+                print '(%d) pc:%d op: %d (%s) args %d' % (self.debug_level, self.pc, op, disass.opcode2name[op], arg)
+                print disass.disassemble(self.code, '(%d)' % self.debug_level, pc = self.pc)
 
             if op == compile.INT_LITERAL:
                 self.op_int_literal(arg)
@@ -148,8 +157,10 @@ class BytecodeInterpreter(object):
         self.stack.append(res)
 
     def eval(self, code, context, interpreter):
-        b = BytecodeInterpreter(code, context, interpreter)
+        b = BytecodeInterpreter(code, context, interpreter, self.debug_level + 1)
         b.run()
+        if self.debug:
+            print '(%d) dbg: <<<<<<<<<<<<<<<<<<<<<<<<<<<<' % self.debug_level
         return b.stack[0]
 
     def read(self, next=1):

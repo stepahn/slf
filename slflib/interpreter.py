@@ -8,6 +8,7 @@ class Interpreter(object):
     def __init__(self, builtins = None, use_bytecode = True):
         self.use_bytecode = use_bytecode
         self.builtins = W_NormalObject()
+        self.debug = False
         if not builtins:
             builtins = self.read_builtins('slflib/builtins.slf')
         self.eval(parse(builtins), self.builtins)
@@ -18,7 +19,7 @@ class Interpreter(object):
 
     def eval(self, ast, w_context):
         if self.use_bytecode:
-            return BytecodeInterpreter(compile.compile(ast), w_context, self, True).run()
+            return BytecodeInterpreter(compile.compile(ast), w_context, self).run()
         else:
             method = getattr(self, "eval_" + ast.__class__.__name__)
             return method(ast, w_context)
