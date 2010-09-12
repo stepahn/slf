@@ -16,6 +16,7 @@ for name, value in compile.__dict__.items():
 
 
 class AbstractDisassembler(object):
+    special_methods = {}
 
     def read4(self, code, pc):
         highval = ord(code[pc+3])
@@ -48,12 +49,15 @@ class AbstractDisassembler(object):
                         oparg = self.read4(code, pc)
                         pc += 4
             else:
-                oparg = None
+                oparg = 0
             self.pc = pc
             self.end(opcode, oparg)
             name = opcode2name[opcode]
-            method = getattr(self, name, self.dummy)
-            method(opcode, oparg)
+            try:
+                method = self.special_methods[name]
+                method(self, opcode, oparg)
+            except KeyError:
+                self.dummy(opcode, oparg)
 
     def start(self, pc):
         pass
@@ -75,9 +79,11 @@ class FindLabelTargets(AbstractDisassembler):
 
     JUMP = JUMP_IF_FALSE
 
+def register(func):
+    import pdb; pdb.set_trace()
+    return func
 
 class Disassembler(AbstractDisassembler):
-
     def __init__(self, indent, targets):
         self.indent = indent
         self.targets = targets
@@ -97,7 +103,7 @@ class Disassembler(AbstractDisassembler):
     JUMP = JUMP_IF_FALSE
 
     def ASSIGNMENT(self, opcode, oparg):
-        print '\t', repr(self.bytecode.symbols[oparg])
+        print '\t', str(self.bytecode.symbols[oparg])
 
     METHOD_LOOKUP = ASSIGNMENT
     ASSIGNMENT_APPEND_PARENT = ASSIGNMENT
@@ -105,14 +111,24 @@ class Disassembler(AbstractDisassembler):
     SET_LOCAL = ASSIGNMENT
 
     def PRIMITIVE_METHOD_CALL(self, opcode, oparg):
-        import primitive
-        func = primitive.all_primitives[oparg]
-        print '\t', repr('$' + func.func_name)
+        import primitives
+        func = primitives.primitives_by_name[oparg]
+        print '\t %s' % func
 
     def dummy(self, opcode, oparg):
         if oparg is None:
             print
         else:
             print '\t', oparg
+
+    special_methods = {
+        'JUMP':JUMP,
+        'ASSIGNMENT':ASSIGNMENT,
+        'GET_LOCAL': GET_LOCAL,
+        'SET_LOCAL':SET_LOCAL,
+        'ASSIGNMENT_APPEND_PARENT':ASSIGNMENT_APPEND_PARENT,
+        'METHOD_LOOKUP':METHOD_LOOKUP,
+        'PRIMITIVE_METHOD_CALL':PRIMITIVE_METHOD_CALL,
+        'JUMP_IF_FALSE':JUMP_IF_FALSE}
 
 
