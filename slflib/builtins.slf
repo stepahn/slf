@@ -13,6 +13,8 @@ object inttrait:
         bool eq(self, i)
     def neq(i):
         bool not(eq(i))
+    def pow(i):
+        math pow(self, i)
 
 object bool:
     def and(a,b):
@@ -39,6 +41,9 @@ object bool:
 object math:
     def sqrt(i):
         i $math_sqrt
+
+    def pow(a, b):
+        a $math_pow(b)
 
     def isprime(i):
         prime = 0

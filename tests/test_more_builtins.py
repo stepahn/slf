@@ -124,6 +124,16 @@ z = bool gz(1)
     assert w_module.getvalue("y").istrue() == False
     assert w_module.getvalue("z").istrue() == True
 
+def test_math_pow():
+    w_module = do_the_twist("""
+x = 2 pow(1)
+y = 2 pow(2)
+z = 2 pow(3)
+""")
+    assert w_module.getvalue("x").value == 2
+    assert w_module.getvalue("y").value == 4
+    assert w_module.getvalue("z").value == 8
+
 def do_the_twist(code):
     from simpleparser import parse
     ast = parse(code)
