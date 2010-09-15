@@ -58,7 +58,9 @@ class W_NormalObject(W_SimpleObject):
         return self.__class__(dict(self.values))
 
     def getname(self):
-        return self['name']
+        return 'fuu'
+        # TODO
+        #return self['name']
 
     def getparents(self):
         parents = [self.values[p] for p in self.parents]
