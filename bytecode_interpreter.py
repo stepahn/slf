@@ -122,8 +122,10 @@ class BytecodeInterpreter(object):
         if isinstance(method, W_Method):
             code = method.block
             context = W_NormalObject()
-            for i, a in enumerate(args):
+            i = 0
+            for a in args:
                 context.setvalue(code.symbols[i], a)
+                i += 1
             context.setvalue('self', receiver)
             context.setvalue('__parent__', receiver)
             res = self.eval(code, context, self.interpreter)
