@@ -62,4 +62,8 @@ def math_sqrt(args):
     import math
     return int(math.sqrt(args[0]))
 
+@register(0)
+def puts(args):
+    print args[0]
+    return args[0]
 
