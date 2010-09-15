@@ -9,8 +9,11 @@ def target(*args):
     return main, None
 
 def main(args):
-    fname = args[1]
-    assert fname
+    try:
+        fname = args[1]
+    except:
+        print 'usage: ', args[0], ' file.slf'
+        sys.exit(1)
 
     interpreter = Interpreter()
     w_module = interpreter.make_module()
