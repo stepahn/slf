@@ -58,3 +58,5 @@ object math:
                         testing = 0
         prime
 
+def puts(i):
+    i $puts
