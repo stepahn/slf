@@ -1,0 +1,11 @@
+def f(y):
+  x = y sub(1)
+  2 pow(x) add(2 pow(x) sub(1))
+
+i = 1
+
+while i neq(65):
+  puts(i)
+  puts(f(i))
+  i = i add(1)
+
