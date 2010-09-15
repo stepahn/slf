@@ -98,7 +98,10 @@ class BytecodeInterpreter(object):
             self.op_jump(arg)
 
     def op_make_function(self, arg):
-        self.stack.append(W_Method({'block':self.lookup_subcode(arg), '__parent__':self.context}))
+        method = W_Method({'__parent__':self.context})
+        method.block = self.lookup_subcode(arg)
+
+        self.stack.append(method)
 
     def op_make_object(self, arg):
         name = self.lookup_symbol(arg)
@@ -116,8 +119,8 @@ class BytecodeInterpreter(object):
             args.insert(0,self.stack.pop())
         method = self.stack.pop()
         receiver = self.stack.pop()
-        if method.callable():
-            code = method.getvalue('block')
+        if isinstance(method, W_Method):
+            code = method.block
             context = W_NormalObject()
             for i, a in enumerate(args):
                 context.setvalue(code.symbols[i], a)

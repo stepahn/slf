@@ -74,6 +74,8 @@ class W_NormalObject(W_SimpleObject):
         self.values[key] = value
 
 class W_Method(W_NormalObject):
+    block = None
+
     def callable(self):
         self.get_mro()
         return True
