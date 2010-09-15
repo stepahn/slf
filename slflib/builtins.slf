@@ -1,4 +1,3 @@
-builtincode = """
 object inttrait:
     def add(i):
         self $int_add(i)
@@ -58,4 +57,4 @@ object math:
                     else:
                         testing = 0
         prime
-"""
+

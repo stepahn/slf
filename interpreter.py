@@ -9,9 +9,21 @@ class Interpreter(object):
         self.use_bytecode = use_bytecode
         self.builtins = W_NormalObject()
         if not builtins:
-            import builtins
-            builtins = builtins.builtincode
+            builtins = self.read_builtins('slflib/builtins.slf')
         self.eval(parse(builtins), self.builtins)
+
+    def read_builtins(self, fname):
+        from pypy.rlib.streamio import open_file_as_stream
+        s = open_file_as_stream(fname, 'r', 1024)
+
+        code =''
+        while True:
+            next_line = s.readline()
+            if not next_line:
+                break
+            code += next_line
+
+        return code
 
     def eval(self, ast, w_context):
         if self.use_bytecode:
