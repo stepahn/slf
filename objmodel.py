@@ -36,6 +36,10 @@ class W_Integer(W_SimpleObject):
     def getval(self, key):
         if key:
             raise KeyError
+        #TODO
+        return self#.value
+
+    def intvalue(self):
         return self.value
 
     def istrue(self):
