@@ -3,7 +3,7 @@ class W_SimpleObject(object):
         import c3computation
         return c3computation.compute_C3_mro(self)
 
-    def getvalue(self, key = None):
+    def getvalue(self, key):
         for parent in self.get_mro():
             try:
                 return parent.getval(key)
