@@ -1,4 +1,7 @@
 from objmodel import W_Integer, W_NormalObject, W_Method
+from pypy.rlib.rarithmetic import ovfcheck, ovfcheck_float_to_int
+
+import math
 
 primitives = {}
 primitives_by_name = []
@@ -41,33 +44,54 @@ def bool_gz(args):
 
 @register(1)
 def int_add(args):
-    return args[0] + args[1]
+    try:
+        return ovfcheck(args[0] + args[1])
+    except OverflowError, e:
+        print e
+        raise e
 
 @register(1)
 def int_sub(args):
-    return args[0] - args[1]
+    try:
+        return ovfcheck(args[0] - args[1])
+    except OverflowError:
+        raise
 
 @register(1)
 def int_mul(args):
-    return args[0] * args[1]
+    try:
+        return ovfcheck(args[0] * args[1])
+    except OverflowError:
+        raise
 
 @register(1)
 def int_div(args):
-    return args[0] / args[1]
+    try:
+        return ovfcheck(args[0] / args[1])
+    except OverflowError:
+        raise
 
 @register(1)
 def int_mod(args):
-    return args[0] % args[1]
+    try:
+        return ovfcheck(args[0] % args[1])
+    except OverflowError:
+        raise
+
 
 @register(0)
 def math_sqrt(args):
-    import math
-    return int(math.sqrt(args[0]))
+    try:
+        return ovfcheck_float_to_int(math.sqrt(args[0]))
+    except OverflowError:
+        raise
 
 @register(1)
 def math_pow(args):
-    import math
-    return int(math.pow(args[0], args[1]))
+    try:
+        return ovfcheck_float_to_int(math.pow(args[0], args[1]))
+    except OverflowError:
+        raise
 
 @register(0)
 def puts(args):
