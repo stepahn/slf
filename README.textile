@@ -1,0 +1,30 @@
+h1. Rpython slf
+
+h2. Goal
+
+A version of the slf interpreter that pypy's translator can transform and compile.
+
+h2. Process
+
+After obtaining rpython compatible versions of the parser I tried translating the slf interpreter. Starting by disabling all byte code commands and re-enabling one by one along the tests provided for the byte code interpreter. While most code worked fine, some parts needed to be changed to work within the supported python subset used by the translator.
+
+To gain insight into some bugs I’ve modified the provided disassembler to be translatable.
+
+h2. Obstacles
+
+
+Two aspects of the object model were changed. The bytecode is not derived from @W_SimpleObject@, hence it could not be stored in the @W_Method@ attributes dict. Therefore the block attribute was added to @W_Method@ to store the code block, slightly changing function invocation.
+
+The @getvalue()@ method of @W_Integer@ was changed to return self, @intvalue()@ method was added to access the actual integer value. Original, @getvalue()@ could return an @int@ for @W_Integer@ or a @W_SimpleObject@. This makes it incompatible with rpython's requirements for variable types.
+Also the signature for @getvalue()@ was changed. It led to segfaults in the translation result if no argument were supplied, falling back to the default. Neither @None@ nor @''@ as default worked, therefore the key argument of @getvalue()@ is no longer optional.
+
+Additional changes were made to the handling of primitive methods, since @getattr()@ could no longer be used to obtain the required method, all functions are now stored in a dict, using a decorator.
+
+h2. Result and limitations
+
+The slf interpreter can be translated and run slf programs from a file given as argument
+
+  ./slf-c test.slf
+
+While the interpreter is run atop of python it can utilize pythons integer model for arbitrary large integer values. The translated interpreter is limited to signed 32/64 bit integers, depending on the host platform (see "PyPy coding guide":http://codespeak.net/pypy/dist/pypy/doc/coding-guide.html#integer-types). Overflowing integers raise an exception at runtime, this is demonstrated in the provided overflow.slf.
+
