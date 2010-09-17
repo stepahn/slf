@@ -46,6 +46,7 @@ class W_Integer(W_SimpleObject):
         return self.value != 0
 
 class W_NormalObject(W_SimpleObject):
+    name = ''
     def __init__(self, values=None):
         if values is None:
             values = {}
@@ -58,9 +59,7 @@ class W_NormalObject(W_SimpleObject):
         return self.__class__(dict(self.values))
 
     def getname(self):
-        return 'fuu'
-        # TODO
-        #return self['name']
+        return self.name
 
     def getparents(self):
         parents = [self.values[p] for p in self.parents]
